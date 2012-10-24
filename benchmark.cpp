@@ -198,6 +198,16 @@ namespace {
                 return;
         }
     }
+
+    void shardDB(){
+        for (int i=0; i<max_threads; i++) {
+			BSONObjBuilder info;
+            _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info.obj(), 0, NULL);
+            cout << _conn[0].getLastError();
+            if (!multi_db)
+                return;
+        }
+    }
 }
 
 namespace Overhead{
@@ -765,11 +775,98 @@ namespace Queries{
 
 }
 
+namespace Shards{
+    struct Base{
+        void reset(){ clearDB(); }
+    };
+
+    /*
+     * inserts documents containing the field '_id' as an ObjectId and the field 'x' as an incrementing integer.
+     */
+    struct NumAndID : Base{
+		void reset() {
+			clearDB();
+			shardDB();
+		}
+        void run(int t, int n) {
+            int base = t * (iterations/n);
+            for (int i=0; i < iterations / n; i++){
+                BSONObjBuilder b;
+                b << GENOID%2; // TODO: number of shards
+                b << "x" << base+i;
+                insert(t, b.obj());
+            }
+        }
+    };
+
+    /*
+     * Does a total of 100 queries (across threads) using a match on a nonexistent field, triggering table scans.
+     * The documents are inserted as empty objects.
+     */
+    struct HundredTableScans{
+        void reset() {
+            clearDB();
+            for (int i=0; i < iterations; i++){
+                insert(-1, BSONObj());
+            }
+            getLastError();
+        }
+
+        void run(int t, int n){
+            for (int i=0; i < 100/n; i++){
+                findOne(t, BSON("does_not_exist" << i));
+            }
+        }
+    };
+
+    /*
+     * Does one query using a range on the id, then iterates over results.
+     * The documents are inserted with an incrementing integer id.
+     */
+    struct IntIDRange{
+        void reset() {
+            clearDB();
+            for (int i=0; i < iterations; i++){
+                insert(-1, BSON("_id" << i));
+            }
+            getLastError();
+        }
+
+        void run(int t, int n){
+            int chunk = iterations / n;
+            auto_ptr<DBClientCursor> cursor = query(t, BSON("_id" << GTE << chunk*t << LT << chunk*(t+1)));
+            cursor->itcount();
+        }
+    };
+
+    /*
+     * Issues findOne queries with a match on id.
+     * The documents are inserted with an incrementing integer id.
+     */
+    struct IntIDFindOne{
+        void reset() {
+            clearDB();
+            for (int i=0; i < iterations; i++){
+                insert(-1, BSON("_id" << i));
+            }
+            getLastError();
+        }
+
+        void run(int t, int n){
+            int base = t * (iterations/n);
+            for (int i=0; i < iterations / n; i++){
+                findOne(t, BSON("_id" << base + i));
+            }
+        }
+    };
+}
+
 namespace{
     struct TheTestSuite : TestSuite{
         TheTestSuite(){
             //add< Overhead::DoNothing >();
 
+			add< Shard::NumAndID >();
             add< Insert::Empty >();
             add< Insert::EmptyBatched<2> >();
             add< Insert::EmptyBatched<10> >();
@@ -804,6 +901,7 @@ namespace{
             //add< Queries::TwoIntsBothGood >();
             //add< Queries::TwoIntsFirstGood >();
             //add< Queries::TwoIntsSecondGood >();
+
         }
     } theTestSuite;
 }
