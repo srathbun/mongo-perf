@@ -201,8 +201,8 @@ namespace {
 
     void shardDB(){
         for (int i=0; i<max_threads; i++) {
-			BSONObjBuilder info;
-            _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info.obj(), 0, NULL);
+			BSONObj info;
+            _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info, 0);
             cout << _conn[0].getLastError();
             if (!multi_db)
                 return;
@@ -792,7 +792,7 @@ namespace Shards{
             int base = t * (iterations/n);
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
-                b << GENOID%2; // TODO: number of shards
+                b << GENOID.toString() % 2; // TODO: number of shards
                 b << "x" << base+i;
                 insert(t, b.obj());
             }
