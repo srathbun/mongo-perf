@@ -204,6 +204,9 @@ namespace {
 			BSONObj info;
             _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info, 0);
             cout << _conn[0].getLastError();
+
+            _conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << "shardkey" ), info, 0);
+            cout << _conn[0].getLastError();
             if (!multi_db)
                 return;
         }
@@ -792,7 +795,7 @@ namespace Shards{
             int base = t * (iterations/n);
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
-                b << "_id" << i % 2; // TODO: number of shards
+                b << "shardkey" << i % 2; // TODO: number of shards
                 b << "x" << base+i;
                 insert(t, b.obj());
             }
@@ -801,13 +804,14 @@ namespace Shards{
 
     /*
      * Does a total of 100 queries (across threads) using a match on a nonexistent field, triggering table scans.
-     * The documents are inserted as empty objects.
+     * The documents are inserted as empty objects, with the shard key.
      */
     struct HundredTableScans{
         void reset() {
             clearDB();
+			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSONObj());
+                insert(-1, BSONObj("shardkey" << i % 2)); // TODO: number of shards
             }
             getLastError();
         }
@@ -826,8 +830,9 @@ namespace Shards{
     struct IntIDRange{
         void reset() {
             clearDB();
+			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSON("_id" << i));
+                insert(-1, BSON("_id" << i << "shardkey" << i % 2)); // TODO: number of shards
             }
             getLastError();
         }
@@ -846,8 +851,9 @@ namespace Shards{
     struct IntIDFindOne{
         void reset() {
             clearDB();
+			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSON("_id" << i));
+                insert(-1, BSON("_id" << i << "shardkey" << i % 2)); // TODO: number of shards
             }
             getLastError();
         }
@@ -867,6 +873,10 @@ namespace{
             //add< Overhead::DoNothing >();
 
 			add< Shards::NumAndID >();
+			add< Shards::HundredTableScans >();
+			add< Shards::IntIDRange >();
+			add< Shards::IntIDFindOne >();
+
             add< Insert::Empty >();
             add< Insert::EmptyBatched<2> >();
             add< Insert::EmptyBatched<10> >();
