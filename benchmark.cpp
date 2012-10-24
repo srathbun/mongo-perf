@@ -786,7 +786,7 @@ namespace Shards{
     /*
      * inserts documents containing the field '_id' as an ObjectId and the field 'x' as an incrementing integer.
      */
-    struct NumAndID : Base{
+    struct ShardNumAndID : Base{
 		void reset() {
 			clearDB();
 			shardDB();
@@ -806,7 +806,7 @@ namespace Shards{
      * Does a total of 100 queries (across threads) using a match on a nonexistent field, triggering table scans.
      * The documents are inserted as empty objects, with the shard key.
      */
-    struct HundredTableScans{
+    struct ShardHundredTableScans{
         void reset() {
             clearDB();
 			shardDB();
@@ -827,7 +827,7 @@ namespace Shards{
      * Does one query using a range on the id, then iterates over results.
      * The documents are inserted with an incrementing integer id.
      */
-    struct IntIDRange{
+    struct ShardIntIDRange{
         void reset() {
             clearDB();
 			shardDB();
@@ -848,7 +848,7 @@ namespace Shards{
      * Issues findOne queries with a match on id.
      * The documents are inserted with an incrementing integer id.
      */
-    struct IntIDFindOne{
+    struct ShardIntIDFindOne{
         void reset() {
             clearDB();
 			shardDB();
@@ -872,10 +872,10 @@ namespace{
         TheTestSuite(){
             //add< Overhead::DoNothing >();
 
-			add< Shards::NumAndID >();
-			add< Shards::HundredTableScans >();
-			add< Shards::IntIDRange >();
-			add< Shards::IntIDFindOne >();
+			add< Shards::ShardNumAndID >();
+			add< Shards::ShardHundredTableScans >();
+			add< Shards::ShardIntIDRange >();
+			add< Shards::ShardIntIDFindOne >();
 
             add< Insert::Empty >();
             add< Insert::EmptyBatched<2> >();
