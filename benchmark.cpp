@@ -866,7 +866,7 @@ namespace{
         TheTestSuite(){
             //add< Overhead::DoNothing >();
 
-			add< Shard::NumAndID >();
+			add< Shards::NumAndID >();
             add< Insert::Empty >();
             add< Insert::EmptyBatched<2> >();
             add< Insert::EmptyBatched<10> >();
