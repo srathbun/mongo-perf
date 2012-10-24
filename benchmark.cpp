@@ -203,10 +203,12 @@ namespace {
         for (int i=0; i<max_threads; i++) {
 			BSONObj info;
             _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info, 0);
-            cout << _conn[0].getLastError();
+            ret = _conn[0].getLastError();
+			cout << ret;
 
-            _conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << "shardkey" ), info, 0);
-            cout << _conn[0].getLastError();
+            _conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << BSON("shardkey" << 1) ), info, 0);
+            ret = _conn[0].getLastError();
+			cout << ret;
             if (!multi_db)
                 return;
         }
