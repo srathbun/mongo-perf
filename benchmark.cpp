@@ -792,7 +792,7 @@ namespace Shards{
             int base = t * (iterations/n);
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
-                b << GENOID.toString() % 2; // TODO: number of shards
+                b << "_id" << i % 2; // TODO: number of shards
                 b << "x" << base+i;
                 insert(t, b.obj());
             }
