@@ -811,7 +811,7 @@ namespace Shards{
             clearDB();
 			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSONObj("shardkey" << i % 2)); // TODO: number of shards
+                insert(-1, BSON("shardkey" << i % 2)); // TODO: number of shards
             }
             getLastError();
         }
