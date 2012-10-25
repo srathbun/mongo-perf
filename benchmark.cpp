@@ -210,6 +210,17 @@ namespace {
             _conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << BSON("shardkey" << 1) ), info, 0);
             ret = _conn[0].getLastError();
 			cerr << ret;
+
+			for (int j=0; j<2; j++) {
+				_conn[0].runCommand("admin", BSON("split" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "middle" << BSON("shardkey" << j) ), info, 0);
+				ret = _conn[0].getLastError();
+				cerr << ret;
+
+				_conn[0].runCommand("admin", BSON("moveChunk" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "find" << BSON("shardkey" << j) << "to" << "nb0" + (j+1).toStr() ), info, 0);
+				ret = _conn[0].getLastError();
+				cerr << ret;
+			}
+
             if (!multi_db)
                 return;
         }
@@ -797,8 +808,9 @@ namespace Shards{
         void run(int t, int n) {
             int base = t * (iterations/n);
 			string bigString("");
-			while ( bigString.length < 1024 * 50 )
+			while ( bigString.length() < 1024 * 50 ) {
 				    bigString += string("asocsancdnsjfnsdnfsjdhfasdfasdfasdfnsadofnsadlkfnsaldknfsad");
+			}
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
                 b << "shardkey" << i % 2; // TODO: number of shards
