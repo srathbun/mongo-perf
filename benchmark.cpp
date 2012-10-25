@@ -205,11 +205,11 @@ namespace {
 			string ret;
             _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info, 0);
             ret = _conn[0].getLastError();
-			cout << ret;
+			cerr << ret;
 
-            //_conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << BSON("shardkey" << 1) ), info, 0);
+            _conn[0].runCommand("admin", BSON("shardcollection" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "key" << BSON("shardkey" << 1) ), info, 0);
             ret = _conn[0].getLastError();
-			cout << ret;
+			cerr << ret;
             if (!multi_db)
                 return;
         }
@@ -796,10 +796,14 @@ namespace Shards{
 		}
         void run(int t, int n) {
             int base = t * (iterations/n);
+			string bigString("");
+			while ( bigString.length < 1024 * 50 )
+				    bigString += string("asocsancdnsjfnsdnfsjdhfasdfasdfasdfnsadofnsadlkfnsaldknfsad");
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
                 b << "shardkey" << i % 2; // TODO: number of shards
                 b << "x" << base+i;
+				b << "y" << bigString;
                 insert(t, b.obj());
             }
         }
