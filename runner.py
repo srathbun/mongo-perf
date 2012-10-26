@@ -15,6 +15,7 @@ from optparse import OptionParser
 optparser = OptionParser()
 optparser.add_option('-p', '--port', dest='port', help='port for mongodb to test', type='string', default='30027')
 optparser.add_option('-n', '--iterations', dest='iterations', help='number of iterations to test', type='string', default='100000')
+optparser.add_option('-a', '--shards', dest='numShards', help='number of shards to test', type='string', default='1')
 optparser.add_option('-s', '--mongos', dest='mongos', help='send all requests through mongos', action='store_true', default=False)
 optparser.add_option('--nolaunch', dest='nolaunch', help='use mongod already running on port', action='store_true', default=False)
 optparser.add_option('-m', '--multidb', dest='multidb', help='use a separate db for each connection', action='store_true', default=False)
@@ -71,7 +72,7 @@ if opts.label != '<git version>':
 benchmark_results=''
 try:
     multidb = '1' if opts.multidb else '0'
-    benchmark = subprocess.Popen(['./benchmark', opts.port, opts.iterations, multidb], stdout=subprocess.PIPE)
+    benchmark = subprocess.Popen(['./benchmark', opts.port, opts.iterations, opts.numShards, multidb], stdout=subprocess.PIPE)
     benchmark_results = benchmark.communicate()[0]
     time.sleep(1) # wait for server to clean up connections
 finally:
@@ -99,7 +100,7 @@ for line in benchmark_results.split('\n'):
         obj['mongodb_git'] = mongodb_git
         obj['ran_at'] = datetime.datetime.now()
         if connection: results.insert(obj)
-        
+
 
 
 

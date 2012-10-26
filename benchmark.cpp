@@ -203,6 +203,7 @@ namespace {
         for (int i=0; i<max_threads; i++) {
 			BSONObj info;
 			string ret;
+			char shardName[20];
             _conn[0].runCommand("admin", BSON("enableSharding" << _db + BSONObjBuilder::numStr(i)), info, 0);
             ret = _conn[0].getLastError();
 			cerr << ret;
@@ -211,14 +212,15 @@ namespace {
             ret = _conn[0].getLastError();
 			cerr << ret;
 
-			for (int j=0; j<2; j++) {
+			for (int j=0; j< numShards; j++) {
 				_conn[0].runCommand("admin", BSON("split" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "middle" << BSON("shardkey" << j) ), info, 0);
 				ret = _conn[0].getLastError();
-				cerr << ret;
+				//cerr << ret;
 
-				_conn[0].runCommand("admin", BSON("moveChunk" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "find" << BSON("shardkey" << j) << "to" << "nb0" + (j+1).toStr() ), info, 0);
+				sprintf(shardName, "shard%04d", j+1);
+				_conn[0].runCommand("admin", BSON("moveChunk" << _db + BSONObjBuilder::numStr(i) + '.' + _coll << "find" << BSON("shardkey" << j) << "to" << shardName ), info, 0);
 				ret = _conn[0].getLastError();
-				cerr << ret;
+				//cerr << ret;
 			}
 
             if (!multi_db)
@@ -813,7 +815,7 @@ namespace Shards{
 			}
             for (int i=0; i < iterations / n; i++){
                 BSONObjBuilder b;
-                b << "shardkey" << i % 2; // TODO: number of shards
+                b << "shardkey" << i % numShards; 
                 b << "x" << base+i;
 				b << "y" << bigString;
                 insert(t, b.obj());
@@ -830,7 +832,7 @@ namespace Shards{
             clearDB();
 			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSON("shardkey" << i % 2)); // TODO: number of shards
+                insert(-1, BSON("shardkey" << i % numShards)); 
             }
             getLastError();
         }
@@ -851,7 +853,7 @@ namespace Shards{
             clearDB();
 			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSON("_id" << i << "shardkey" << i % 2)); // TODO: number of shards
+                insert(-1, BSON("_id" << i << "shardkey" << i % numShards)); 
             }
             getLastError();
         }
@@ -872,7 +874,7 @@ namespace Shards{
             clearDB();
 			shardDB();
             for (int i=0; i < iterations; i++){
-                insert(-1, BSON("_id" << i << "shardkey" << i % 2)); // TODO: number of shards
+                insert(-1, BSON("_id" << i << "shardkey" << i % numShards)); 
             }
             getLastError();
         }
@@ -936,8 +938,8 @@ namespace{
 }
 
 int main(int argc, const char **argv){
-    if (argc < 3){
-        cout << argv[0] << " [port] [iterations] [multidb (1 or 0)]" << endl;
+    if (argc < 4){
+        cout << argv[0] << " [port] [iterations] [numShards] [multidb (1 or 0)] " << endl;
         return 1;
     }
 
@@ -952,7 +954,9 @@ int main(int argc, const char **argv){
 
     iterations = atoi(argv[2]);
 
-    if (argc > 3)
+	numShards = atoi(argv[3]);
+
+    if (argc > 4)
         multi_db = (argv[3][0] == '1');
 
     theTestSuite.run();
