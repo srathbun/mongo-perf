@@ -96,6 +96,7 @@ namespace {
 
     // passed in as argument
     int iterations;
+	int numShards;
 
     struct TestBase{
         virtual void run(int thread, int nthreads) = 0;
